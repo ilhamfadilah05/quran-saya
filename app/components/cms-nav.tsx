@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BellRing, LayoutDashboard, Logs, UsersRound } from 'lucide-react';
+import { BellRing, LayoutDashboard, Logs, MoonStar, UsersRound } from 'lucide-react';
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -24,6 +24,7 @@ const menuGroups = [
     title: 'Data',
     items: [
       { href: '/users', label: 'Users', icon: UsersRound },
+      { href: '/adzan-notifications', label: 'Notifikasi adzan', icon: MoonStar },
       { href: '/custom-reminders', label: 'Custom Reminder', icon: BellRing }
     ]
   }

@@ -881,6 +881,21 @@ textarea {
   background: #ffe4e6;
 }
 
+.adzan-edit-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  align-items: center;
+}
+
+.adzan-edit-grid label {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
 .modal-overlay {
   position: fixed;
   inset: 0;
