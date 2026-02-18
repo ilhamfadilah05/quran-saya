@@ -2,6 +2,9 @@
 
 import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
+import { LogIn } from 'lucide-react';
+import { Button } from '@/app/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/app/components/ui/card';
 
 export function LoginForm() {
   const router = useRouter();
@@ -38,34 +41,41 @@ export function LoginForm() {
   }
 
   return (
-    <form className="card grid" onSubmit={onSubmit}>
-      <h1>Login Admin</h1>
-      <p className="small">Masuk untuk mengakses CMS notifikasi adzan.</p>
-      <div>
-        <label htmlFor="email">Email</label>
-        <input
-          id="email"
-          type="email"
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
-          placeholder="admin@quransaya.com"
-          required
-        />
-      </div>
-      <div>
-        <label htmlFor="password">Password</label>
-        <input
-          id="password"
-          type="password"
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-          required
-        />
-      </div>
-      <button type="submit" disabled={loading}>
-        {loading ? 'Memproses...' : 'Login'}
-      </button>
-      {error && <p className="error">{error}</p>}
-    </form>
+    <Card>
+      <CardHeader>
+        <CardTitle>Login Admin</CardTitle>
+        <CardDescription>Masuk untuk mengakses CMS notifikasi adzan.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form className="grid" onSubmit={onSubmit}>
+          <div>
+            <label htmlFor="email">Email</label>
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="admin@quransaya.com"
+              required
+            />
+          </div>
+          <div>
+            <label htmlFor="password">Password</label>
+            <input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              required
+            />
+          </div>
+          <Button type="submit" disabled={loading}>
+            <LogIn size={15} />
+            {loading ? 'Memproses...' : 'Login'}
+          </Button>
+          {error && <p className="error">{error}</p>}
+        </form>
+      </CardContent>
+    </Card>
   );
 }

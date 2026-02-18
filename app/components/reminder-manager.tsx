@@ -2,6 +2,8 @@
 
 import { useMemo, useState, type FormEvent } from 'react';
 import { DataGrid } from '@/app/components/data-grid';
+import { Button } from '@/app/components/ui/button';
+import { Pencil, Power, Trash2 } from 'lucide-react';
 
 type Reminder = {
   id: string;
@@ -122,6 +124,9 @@ export function ReminderManager({ initialReminders }: Props) {
   }
 
   async function removeReminder(id: string) {
+    const confirmed = window.confirm('Hapus reminder ini?');
+    if (!confirmed) return;
+
     setSaving(true);
     setMessage('');
 
@@ -145,7 +150,7 @@ export function ReminderManager({ initialReminders }: Props) {
 
   return (
     <div className="grid">
-      {message && <section className="card"><p className="small">{message}</p></section>}
+      {message && <section className="ui-card"><p className="small">{message}</p></section>}
 
       <DataGrid
         title="Daftar Reminder"
@@ -160,29 +165,55 @@ export function ReminderManager({ initialReminders }: Props) {
             key: 'actions',
             label: 'Aksi',
             searchable: false,
+            sortable: false,
             render: (row) => {
               const reminder = row.raw as unknown as Reminder;
               return (
-                <div className="action-cell">
-                  <button type="button" onClick={() => openEditDialog(reminder)} disabled={saving}>
-                    Edit
-                  </button>
-                  <button type="button" onClick={() => toggleReminder(reminder)} disabled={saving}>
-                    {reminder.is_active ? 'Nonaktifkan' : 'Aktifkan'}
-                  </button>
-                  <button type="button" className="danger-btn" onClick={() => removeReminder(reminder.id)} disabled={saving}>
-                    Hapus
-                  </button>
+                <div className="reminder-actions">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="action-icon-btn"
+                    title="Edit reminder"
+                    onClick={() => openEditDialog(reminder)}
+                    disabled={saving}
+                  >
+                    <Pencil size={15} />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className={reminder.is_active ? 'action-icon-btn active' : 'action-icon-btn'}
+                    title={reminder.is_active ? 'Nonaktifkan reminder' : 'Aktifkan reminder'}
+                    onClick={() => toggleReminder(reminder)}
+                    disabled={saving}
+                  >
+                    <Power size={15} />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="action-icon-btn danger"
+                    title="Hapus reminder"
+                    onClick={() => removeReminder(reminder.id)}
+                    disabled={saving}
+                  >
+                    <Trash2 size={15} />
+                  </Button>
                 </div>
               );
             }
           }
         ]}
         emptyMessage="Belum ada custom reminder."
+        defaultSort={{ key: 'status', direction: 'asc' }}
         headerActions={
-          <button type="button" onClick={openCreateDialog} disabled={saving}>
+          <Button type="button" size="sm" onClick={openCreateDialog} disabled={saving}>
             + Tambah Reminder
-          </button>
+          </Button>
         }
       />
 
@@ -192,8 +223,10 @@ export function ReminderManager({ initialReminders }: Props) {
             <form className="grid" onSubmit={submitReminder}>
               <div className="header-row">
                 <h2>{editingReminderId ? 'Edit Custom Reminder' : 'Tambah Custom Reminder'}</h2>
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="sm"
                   onClick={() => {
                     setOpenDialog(false);
                     setEditingReminderId(null);
@@ -201,7 +234,7 @@ export function ReminderManager({ initialReminders }: Props) {
                   disabled={saving}
                 >
                   Tutup
-                </button>
+                </Button>
               </div>
               <div>
                 <label htmlFor="reminder-title">Judul</label>
@@ -222,9 +255,9 @@ export function ReminderManager({ initialReminders }: Props) {
                   required
                 />
               </div>
-              <button type="submit" disabled={saving}>
+              <Button type="submit" disabled={saving}>
                 {saving ? 'Menyimpan...' : editingReminderId ? 'Simpan Perubahan' : 'Simpan Reminder'}
-              </button>
+              </Button>
             </form>
           </div>
         </div>

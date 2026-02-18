@@ -2,20 +2,29 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { BellRing, LayoutDashboard, Logs, UsersRound } from 'lucide-react';
+import {
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem
+} from '@/app/components/ui/sidebar';
 
 const menuGroups = [
   {
     title: 'Monitoring',
     items: [
-      { href: '/', label: 'Dashboard', icon: 'DB' },
-      { href: '/notification-logs', label: 'Log Notification', icon: 'LG' }
+      { href: '/', label: 'Dashboard', icon: LayoutDashboard },
+      { href: '/notification-logs', label: 'Log Notification', icon: Logs }
     ]
   },
   {
     title: 'Data',
     items: [
-      { href: '/users', label: 'Users', icon: 'US' },
-      { href: '/custom-reminders', label: 'Custom Reminder', icon: 'CR' }
+      { href: '/users', label: 'Users', icon: UsersRound },
+      { href: '/custom-reminders', label: 'Custom Reminder', icon: BellRing }
     ]
   }
 ];
@@ -26,22 +35,29 @@ export function CmsNav() {
   return (
     <nav className="cms-nav">
       {menuGroups.map((group) => (
-        <section key={group.title} className="nav-group">
-          <p className="nav-group-title">{group.title}</p>
-          <div className="nav-group-items">
+        <SidebarGroup key={group.title}>
+          <SidebarGroupLabel>{group.title}</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
             {group.items.map((menu) => {
               const active = pathname === menu.href;
+              const Icon = menu.icon;
               return (
-                <Link key={menu.href} href={menu.href} className={active ? 'sidebar-link active' : 'sidebar-link'}>
-                  <span className="menu-icon" aria-hidden="true">
-                    {menu.icon}
-                  </span>
-                  <span>{menu.label}</span>
-                </Link>
+                <SidebarMenuItem key={menu.href}>
+                  <SidebarMenuButton asChild isActive={active}>
+                    <Link href={menu.href}>
+                      <span className="menu-icon" aria-hidden="true">
+                        <Icon size={15} />
+                      </span>
+                      <span>{menu.label}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
               );
             })}
-          </div>
-        </section>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
       ))}
     </nav>
   );

@@ -132,14 +132,14 @@ export async function runAdzanCron(): Promise<CronJobResult> {
       };
     })
     .filter(Boolean) as Array<{
-    dedupeKey: string;
-    userId: string;
-    token: string;
-    title: string;
-    body: string;
-    prayerKey: string;
-    city: string;
-  }>;
+      dedupeKey: string;
+      userId: string;
+      token: string;
+      title: string;
+      body: string;
+      prayerKey: string;
+      city: string;
+    }>;
 
   if (prepared.length === 0) {
     await supabase.from('cron_job_runs').insert({
