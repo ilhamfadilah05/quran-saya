@@ -9,14 +9,14 @@ type UserRow = {
   is_reminder: boolean | null;
   device_id: string | null;
   device_name: string | null;
-  token_firebase: string | null;
+  version: string | null;
 };
 
 async function getUsers() {
   const supabase = getSupabaseServerClient();
   const { data, error } = await supabase
     .from('users')
-    .select('id, created_at, is_reminder, device_id, device_name, token_firebase')
+    .select('id, created_at, is_reminder, device_id, device_name, version')
     .order('created_at', { ascending: false })
     .limit(1000);
 
@@ -32,7 +32,7 @@ export default async function UsersPage() {
     is_reminder: row.is_reminder ? 'Aktif' : 'Nonaktif',
     device_id: row.device_id ?? '-',
     device_name: row.device_name ?? '-',
-    token_firebase: row.token_firebase ? 'Ada token' : '-'
+    version: row.version ?? '-'
   }));
 
   return (
@@ -49,7 +49,7 @@ export default async function UsersPage() {
             { key: 'is_reminder', label: 'Reminder Status' },
             { key: 'device_id', label: 'Device ID' },
             { key: 'device_name', label: 'Device Name' },
-            { key: 'token_firebase', label: 'FCM Token' }
+            { key: 'version', label: 'Version' }
           ]}
           emptyMessage="Belum ada user."
         />

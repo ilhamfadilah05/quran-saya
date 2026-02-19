@@ -30,7 +30,11 @@ const menuGroups = [
   }
 ];
 
-export function CmsNav() {
+type CmsNavProps = {
+  onNavigate?: () => void;
+};
+
+export function CmsNav({ onNavigate }: CmsNavProps) {
   const pathname = usePathname();
 
   return (
@@ -40,22 +44,22 @@ export function CmsNav() {
           <SidebarGroupLabel>{group.title}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-            {group.items.map((menu) => {
-              const active = pathname === menu.href;
-              const Icon = menu.icon;
-              return (
-                <SidebarMenuItem key={menu.href}>
-                  <SidebarMenuButton asChild isActive={active}>
-                    <Link href={menu.href}>
-                      <span className="menu-icon" aria-hidden="true">
-                        <Icon size={15} />
-                      </span>
-                      <span>{menu.label}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              );
-            })}
+              {group.items.map((menu) => {
+                const active = pathname === menu.href;
+                const Icon = menu.icon;
+                return (
+                  <SidebarMenuItem key={menu.href}>
+                    <SidebarMenuButton asChild isActive={active}>
+                      <Link href={menu.href} onClick={onNavigate}>
+                        <span className="menu-icon" aria-hidden="true">
+                          <Icon size={15} />
+                        </span>
+                        <span>{menu.label}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
