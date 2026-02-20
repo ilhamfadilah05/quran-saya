@@ -10,6 +10,14 @@ export type CronJobResult = {
   time: string;
   timeZone: string;
   message?: string;
+  breakdown?: {
+    activeReminders: number;
+    eligibleUsers: number;
+    prepared: number;
+    insertedNew: number;
+    retried: number;
+    skippedDuplicate: number;
+  };
 };
 
 type AdzanRow = {
@@ -253,7 +261,24 @@ export async function runReminderCron(): Promise<CronJobResult> {
       note: `No active reminder at ${hhmm}`
     });
 
-    return { ok: true, job: 'reminder', processed: 0, sent: 0, failed: 0, time: hhmm, timeZone, message: 'No reminder' };
+    return {
+      ok: true,
+      job: 'reminder',
+      processed: 0,
+      sent: 0,
+      failed: 0,
+      time: hhmm,
+      timeZone,
+      message: 'No reminder',
+      breakdown: {
+        activeReminders: 0,
+        eligibleUsers: 0,
+        prepared: 0,
+        insertedNew: 0,
+        retried: 0,
+        skippedDuplicate: 0
+      }
+    };
   }
 
   const { data: users, error: userError } = await supabase
@@ -284,7 +309,15 @@ export async function runReminderCron(): Promise<CronJobResult> {
       failed: 0,
       time: hhmm,
       timeZone,
-      message: 'No reminder recipients'
+      message: 'No reminder recipients',
+      breakdown: {
+        activeReminders: reminders.length,
+        eligibleUsers: 0,
+        prepared: 0,
+        insertedNew: 0,
+        retried: 0,
+        skippedDuplicate: 0
+      }
     };
   }
 
@@ -315,16 +348,101 @@ export async function runReminderCron(): Promise<CronJobResult> {
     }
   }));
 
-  const { data: queuedRows, error: queueError } = await supabase
+  const preparedKeys = prepared.map((item) => item.dedupeKey);
+  const { data: existingRows, error: existingError } = await supabase
     .from('notification_logs')
-    .upsert(insertRows, { onConflict: 'dedupe_key', ignoreDuplicates: true })
-    .select('id, dedupe_key');
+    .select('id, dedupe_key, status')
+    .in('dedupe_key', preparedKeys);
 
-  if (queueError) {
-    throw new Error(queueError.message);
+  if (existingError) {
+    throw new Error(existingError.message);
   }
 
-  const queued = queuedRows ?? [];
+  const existingMap = new Map(
+    (existingRows ?? []).map((row) => [
+      row.dedupe_key as string,
+      { id: row.id as number, status: row.status as string }
+    ])
+  );
+
+  const newItems = prepared.filter((item) => !existingMap.has(item.dedupeKey));
+  const retryItems = prepared.filter((item) => {
+    const row = existingMap.get(item.dedupeKey);
+    return row?.status === 'failed' || row?.status === 'queued';
+  });
+  const skippedDuplicate = prepared.length - newItems.length - retryItems.length;
+
+  let insertedRows: Array<{ id: number; dedupe_key: string }> = [];
+  if (newItems.length > 0) {
+    const newInsertRows = insertRows.filter((row) => !existingMap.has(row.dedupe_key as string));
+    const { data: newQueuedRows, error: queueError } = await supabase
+      .from('notification_logs')
+      .insert(newInsertRows)
+      .select('id, dedupe_key');
+
+    if (queueError) {
+      throw new Error(queueError.message);
+    }
+
+    insertedRows = (newQueuedRows ?? []) as Array<{ id: number; dedupe_key: string }>;
+  }
+
+  const retryRowIds = retryItems
+    .map((item) => existingMap.get(item.dedupeKey)?.id)
+    .filter(Boolean) as number[];
+
+  if (retryRowIds.length > 0) {
+    const { error: retryUpdateError } = await supabase
+      .from('notification_logs')
+      .update({ status: 'queued', error_message: null })
+      .in('id', retryRowIds);
+
+    if (retryUpdateError) {
+      throw new Error(retryUpdateError.message);
+    }
+  }
+
+  const queued = [
+    ...insertedRows.map((row) => ({ id: row.id, dedupe_key: row.dedupe_key })),
+    ...retryItems
+      .map((item) => {
+        const existing = existingMap.get(item.dedupeKey);
+        if (!existing) return null;
+        return { id: existing.id, dedupe_key: item.dedupeKey };
+      })
+      .filter(Boolean)
+  ] as Array<{ id: number; dedupe_key: string }>;
+
+  if (queued.length === 0) {
+    await supabase.from('cron_job_runs').insert({
+      job_name: 'reminder',
+      status: 'success',
+      processed_count: 0,
+      sent_count: 0,
+      failed_count: 0,
+      note: `${hhmm} ${timeZone} (no new/retry work)`
+    });
+
+    return {
+      ok: true,
+      job: 'reminder',
+      processed: 0,
+      sent: 0,
+      failed: 0,
+      time: hhmm,
+      timeZone,
+      message: 'All reminders already sent',
+      breakdown: {
+        activeReminders: reminders.length,
+        eligibleUsers: recipients.length,
+        prepared: prepared.length,
+        insertedNew: 0,
+        retried: 0,
+        skippedDuplicate
+      }
+    };
+  }
+
   let sent = 0;
   let failed = 0;
 
@@ -365,8 +483,24 @@ export async function runReminderCron(): Promise<CronJobResult> {
     processed_count: queued.length,
     sent_count: sent,
     failed_count: failed,
-    note: `${hhmm} ${timeZone}`
+    note: `${hhmm} ${timeZone} (new:${insertedRows.length}, retry:${retryItems.length}, skipped:${skippedDuplicate})`
   });
 
-  return { ok: true, job: 'reminder', processed: queued.length, sent, failed, time: hhmm, timeZone };
+  return {
+    ok: true,
+    job: 'reminder',
+    processed: queued.length,
+    sent,
+    failed,
+    time: hhmm,
+    timeZone,
+    breakdown: {
+      activeReminders: reminders.length,
+      eligibleUsers: recipients.length,
+      prepared: prepared.length,
+      insertedNew: insertedRows.length,
+      retried: retryItems.length,
+      skippedDuplicate
+    }
+  };
 }
